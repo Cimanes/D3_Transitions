@@ -95,29 +95,29 @@ function handleMousemove(e) {
 	 	item = quadtree.find(pos[0], pos[1], proximity), 		// Find the closest element within proximity limit.
 	 	tooltip = d3.select('.tooltip'), 										// D3 selection of the tooltip elemwnt.
 	
-	hoveredId = item ? data.indexOf(item) : undefined;				// Index of closest circle (array of coordinates).
-	updateCircles();																					// update the circles to change color if required.
+	hoveredId = item ? data.indexOf(item) : undefined;		// Index of closest circle (array of coordinates).
+	updateCircles();																			// update the circles to change color if required.
 	
 	if (hoveredId == undefined) tooltip.style('opacity', 0);
 	else  {
-		let tipText = 'id: ' + hoveredId + '<br>r = ';
-		let xTip, yTip;
-		if (option == 1) {
-			tipText += item[2].toFixed(2);
-			xTip = item[0]; 
-			yTip = item[1];			
+		let tipText = 'id: ' + hoveredId + '<br>r = ';			// First row of tooltip; start second row with 'r'
+		let xTip, yTip;																			// Create variables for tooltip coordinates
+		if (option == 1) {																	
+			tipText += item[2].toFixed(2);										// Increase tooltip text with radius (two decimal places)
+			xTip = item[0]; 																	// 'x' coordinate within SVG box
+			yTip = item[1];																		// 'y' coordinate within SVG box
 		}	
 		else if (option == 2) {
-			tipText += item.r.toFixed(2);
-			xTip = item.x; 
-			yTip = item.y;
+			tipText += item.r.toFixed(2);											// Increase tooltip text with radius (two decimal places)
+			xTip = item.x; 																		// 'x' coordinate within SVG box
+			yTip = item.y;																		// 'y' coordinate within SVG box
 		}
 		tooltip
 			.style('opacity', 0.8)
 			.style('width', tipWidth)
 			.html( tipText)
-			.style('left', xTip + offset.left + 'px')
-			.style('top', yTip + offset.top + 'px');				
+			.style('left', xTip + offset.left + 'px')					// Final 'x' position of tooltip
+			.style('top', yTip + offset.top + 'px');					// Final 'y' position of tooltip
 	}
 }
 
