@@ -1,18 +1,26 @@
+/*
+* Ref: 
+*  https://www.d3indepth.com/transitions/
+*  https://www.d3indepth.com/interaction/
+*  https://codepen.io/martinwantke/pen/rpNLWr
+*/
+
 // Note: the array "data" contains the elements that define the locations and radii of the circles. 
 // It can be defined in two ways: 
 // Option 1: Array of coordinate arrays of type [x, y, r].
 // Option 2: Array of objects of type {"id": 1, "x": 100, "y": 50, "r": 20}
 
 const 
-	option = 1,				// Choose data format: (1) = Array of coordinates / (2) = Array of objects.
-	radius = 30,			// Maximum radius available.
-	maxNumber = 30,		// Maximum number of circles in teh SVG container.
+	option = 2,				// Choose data format: (1) = Array of coordinates / (2) = Array of objects.
+	radius = 28,			// Maximum radius available (could be any property, such as population, amount...)
+	maxNumber = 20,		// Maximum number of circles in teh SVG container.
 	proximity = 30,		// Proximity to circle center to enable coloring.
 	delay = 1000,			// Delay during transition.
 	hFactor = 0.8,		// Horizontal size factor (svg / body).
-	vFactor = 0.8;		// Vertical size factor (svg / body).
+	vFactor = 0.8,		// Vertical size factor (svg / body).
+	tipWidth = '50px';// Width of the tooltip box.
 
-let data = [],			// Variable to store data from circles.
+let data = [],			// Variable to store data from circles (position and radius).
  	hoveredId,				// Variable to store id of the closest circle.
 	width = window.innerWidth * hFactor, 		// Width of the SVG container.
 	height = window.innerHeight * vFactor; 	// Height of the SVG container.
@@ -20,9 +28,9 @@ let data = [],			// Variable to store data from circles.
 // Define the size of the svg container
 let box = d3.select('#box').style('width', width).style('height', height);
 
-// ---------------------------------------------------------------------------------
+// ================================================
 // Re-define size of the container if the windown is resized
-// ---------------------------------------------------------------------------------
+// ================================================
 function rewindow(){
 	width = window.innerWidth * hFactor; 			// Width of the SVG container.
 	height = window.innerHeight * vFactor; 		// Height of the SVG container.
@@ -30,16 +38,16 @@ function rewindow(){
 }
 window.addEventListener("resize", rewindow);
 
-// ---------------------------------------------------------------------------------
+// ================================================
 // Define the quadtree 
-// ---------------------------------------------------------------------------------
+// ================================================
 let quadtree = d3.quadtree(); 
 if (option == 2) quadtree.x(d => d.x).y(d => d.y);	// req'd for option (2) only.
 
-// ---------------------------------------------------------------------------------
+// ================================================
 // Function to update circles (number, x, y, r).
 // Two options depending on how the data array is configured:
-// ---------------------------------------------------------------------------------
+// ================================================
 function updateData() {
 	data = [];																	// Start from empty data array.
 	let numPoints = Math.random() * maxNumber;	// Update number of items.
@@ -50,48 +58,93 @@ function updateData() {
 			data.push( [
 				Math.random() * width, 			// data[i][0] is "x" coordinate within container (req'd for quadtree).
 				Math.random() * height, 		// data[i][1] is "y" coordinate within container (req'd for quadtree).
-				Math.random() * radius 			// data[i][2] is radius.
+				2 + Math.random() * radius 	// data[i][2] is radius.
 			] );
 		
 		else if (option == 2)			// Option (2): objects of type {id, x, y, r}. quadtree defines x y with item properties .x .y			
-			data.push( {									// Add items to the data array.
-				id: i,											// id of each circle.
-				x: Math.random() * width,		// "x" property is the "x" coordinate.
-				y: Math.random() * height,	// "y" property is the "y" coordinate.
-				r: Math.random() * radius		// "r" property is the "r" coordinate.
+			data.push( {										// Add items to the data array.
+				id: i,												// id of each circle.
+				x: Math.random() * width,			// "x" property is the "x" coordinate.
+				y: Math.random() * height,		// "y" property is the "y" coordinate.
+				r: 2 + Math.random() * radius	// "r" property is the "r" coordinate.
 			} );	 
 	}
 }
 
-// ---------------------------------------------------------------------------------
-// Function to find pointer and decide color for each circle.
-// ---------------------------------------------------------------------------------
-function handleMousemove(e) {
-	let pos = d3.pointer(e, this);														// cursor position [x, y].
-	let i = quadtree.find(pos[0], pos[1], proximity); 				// closest element within proximity limit.
-	if (option == 1)	hoveredId = i ? i : undefined;					// option (1) find index of closest circle (array of coordinates).
-	else if (option == 2)  hoveredId = i ? i.id : undefined;	// option (2) find index of closest circle (array of objects).
- 	updateCircles();																					// update the circles to change color if required.
+// ================================================
+// Function to find top-left corner of an element.
+// ================================================
+function getOffset(element) {
+  const bound = element.getBoundingClientRect();
+  const html = document.documentElement;
+	// console.log(bound.top, window.pageYOffset, html.clientTop)
+  return {
+    top: bound.top + window.pageYOffset - html.clientTop,
+    left: bound.left + window.pageXOffset - html.clientLeft
+  };
 }
 
+// ================================================
+// Handle color for each circle and tooltip.
+// ================================================
+function handleMousemove(e) {
+	const 
+		element = document.getElementById('box'),						// Define the svg box as "element"
+	 	offset = getOffset(element),												// Get the top and left offset of the svg box
+	 	pos = d3.pointer(e, this),													// Define cursor position [x, y].
+	 	item = quadtree.find(pos[0], pos[1], proximity), 		// Find the closest element within proximity limit.
+	 	tooltip = d3.select('.tooltip'), 										// D3 selection of the tooltip elemwnt.
+	
+	hoveredId = item ? data.indexOf(item) : undefined;				// Index of closest circle (array of coordinates).
+	updateCircles();																					// update the circles to change color if required.
+	
+	if (hoveredId == undefined) tooltip.style('opacity', 0);
+	else  {
+		let tipText = 'id: ' + hoveredId + '<br>r = ';
+		let xTip, yTip;
+		if (option == 1) {
+			tipText += item[2].toFixed(2);
+			xTip = item[0]; 
+			yTip = item[1];			
+		}	
+		else if (option == 2) {
+			tipText += item.r.toFixed(2);
+			xTip = item.x; 
+			yTip = item.y;
+		}
+		tooltip
+			.style('opacity', 0.8)
+			.style('width', tipWidth)
+			.html( tipText)
+			.style('left', xTip + offset.left + 'px')
+			.style('top', yTip + offset.top + 'px');				
+	}
+}
+
+// ================================================
 // Enable color changing when moving mouse within "box".
+// ================================================
 function initEvents() { box.on('mousemove', handleMousemove); }
 
+// ================================================
+// Function to update quadtree
+// ================================================
 function updateQuadtree() {	
 	quadtree.removeAll(quadtree.data());		// Start from empty quadtree.
 	quadtree.addAll(data);									// Create quadtree with all tne new data.
 }
 
-// ---------------------------------------------------------------------------------
+// ================================================
 // Function to update number, size and color of circles
-// ---------------------------------------------------------------------------------
+// ================================================
 function updateCircles() {
 	box.selectAll('circle')
 		.data(data)
 		.join(
 			function(enter) {														// define how new "entering" elements appear.
-				return enter.append('circle')							// append a circle for each element in "data".
-					.attr('cy', d => option == 1 ? d[1] : d.y )		// Initial "y" coordinate for transition (x and r are 0 by default). 
+				return enter
+					.append('circle')												// append a circle for each element in "data".
+					.attr('cy', d => option == 1 ? d[1] : d.y );		// Initial "y" coordinate for transition (x and r are 0 by default). 
 			},
 			function(update) { return update; },				// define what happens to existing elements.
 			function(exit) { 														// Define how "exiting" elements disappear.
@@ -103,8 +156,7 @@ function updateCircles() {
 			}
 		)
 		.style('fill', function(d, i) { 							// Apply conditional color to the circles
-				if (option == 1) return data[i] === hoveredId ? 'red' : '#fff';
-				if (option == 2) return data[i].id === hoveredId ? 'red' : '#fff';
+				if (i === hoveredId) return 'red';
 			}
 		)
 		.transition().duration(delay)									// Define transition from initial to static.
@@ -113,14 +165,14 @@ function updateCircles() {
 		.attr('r', d => option == 1 ? d[2] : d.r );		// radius (from array or from object)
 }
 
-// ---------------------------------------------------------------------------------
+// ================================================
 // Function executed by "refresh" button
-// ---------------------------------------------------------------------------------
+// ================================================
 function refresh() { 			
-	updateData();						// Update array of data
-	updateQuadtree();				// Update the quadtree
-	updateCircles();				// Update the circles	
-	initEvents();						// handle the mouse when hovering over the svg window
-	// console.log(data);			// (optional) log data for reference
+	updateData();				// Update array of data
+	updateQuadtree();		// Update the quadtree
+	updateCircles();		// Update the circles	
+	initEvents();				// handle the mouse when hovering over the svg window
+	// console.log(data);	// (optional) log data for reference
 }
 refresh();

@@ -1,16 +1,57 @@
-circle {	opacity: 0.5; }
+/* Define default colors */
+:root {
+  --bgColor:      #222;
+  --circleColor:  #fff;
+  --svgColor:   	#333;
+	--buttonColor: 	#cce;
+	--hoverColor: 	#448;
+	--actColor:			#66a;
+	--buttonWidth:	200px;
+	--marginLeft:		10vw;
+  --tipColor:     #cd6;
+}
 
-body { background-color: #222; }
+circle {	
+	opacity: 0.5; 
+	fill: var(--circleColor);
+}
+
+body { background-color: var(--bgColor);}
 
 svg {	
 	display: block;
-	background-color: #333;
-	margin-left: 10vw;
+	background-color: var(--svgColor);
+	margin-left: var(--marginLeft);
 }
 
+/* Button styles: 
+Ref: https://www.freecodecamp.org/news/css-button-style-hover-color-and-background/#active 
+ */
 button {
 	display: block;
-	width: 100px;
+	background-color: var(--buttonColor);
+	width: var(--buttonWidth);
 	height: max(18px, 5vh);
-	margin: 0 10vw;
+	margin-left: var(--marginLeft);
+	border-radius: 9px;
+}
+
+button:hover {
+	background-color: var(--hoverColor);
+	color: #ddd;
+}
+button:active {
+	background-color: var(--actColor);
+}
+
+#tooltip {
+  position: absolute;
+  padding: 10px;
+  text-align: center;
+  font-size: 12px;
+  background: var(--tipColor);
+  border-radius: 7px;
+  opacity: 0;
+  pointer-events: none;
+  font-family: Arial, Helvetica, sans-serif;
 }
