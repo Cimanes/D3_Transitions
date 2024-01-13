@@ -89,35 +89,10 @@ function getOffset(element) {
 // ================================================
 function handleMousemove(e) {
 	const 
-		element = document.getElementById('box'),						// Define the svg box as "element"
-	 	offset = getOffset(element),												// Get the top and left offset of the svg box
 	 	pos = d3.pointer(e, this),													// Define cursor position [x, y].
- 		item = quadtree.find(pos[0], pos[1], proximity), 		// Find the closest element within proximity limit.
-	 	tooltip = d3.select('.tooltip'); 										// D3 selection of the tooltip elemwnt.
-		
-	hoveredId = item ? data.indexOf(item) : undefined;		// Index of closest circle (array of coordinates).
-	if (hoveredId === undefined) tooltip.style('opacity', 0);
-	else  {																								// Show tooltip when hoveriedId is defined:
-		let tipText = 'id: ' + hoveredId + '<br>r = ';			// First row of tooltip; start second row with 'r'
-		let xTip, yTip;																			// Create variables for tooltip coordinates
-		if (option == 1) {																	
-			tipText += item[2].toFixed(2);										// Increase tooltip text with radius (two decimal places)
-			xTip = item[0]; 																	// 'x' coordinate within SVG box
-			yTip = item[1];																		// 'y' coordinate within SVG box
-		}	
-		else if (option == 2) {
-			tipText += item.r.toFixed(2);											// Increase tooltip text with radius (two decimal places)
-			xTip = item.x; 																		// 'x' coordinate within SVG box
-			yTip = item.y;																		// 'y' coordinate within SVG box
-		}
-		tooltip
-			.style('opacity', 0.8)
-			.style('width', tipWidth)
-			.html( tipText)
-			.style('left', xTip + offset.left + 'px')					// Final 'x' position of tooltip
-			.style('top', yTip + offset.top + 'px');					// Final 'y' position of tooltip
-	}
-		updateCircles();																			// update the circles to change color if required.
+ 		item = quadtree.find(pos[0], pos[1], proximity); 		// Find the closest element within proximity limit.
+		updateTooltip(item);
+		updateCircles();																		// update the circles to change color if required.
 }
 
 // ================================================
@@ -134,6 +109,33 @@ function updateQuadtree() {
 }
 
 // ================================================
+// Function to update tooltip when applicable 
+// ================================================
+function updateTooltip(item) {
+  const 
+		tooltip = d3.select('.tooltip'),
+		element = document.getElementById('box'),						// Define the svg box as "element"
+		offset = getOffset(element);												// Get the top and left offset of the svg box
+	
+	hoveredId = item ? data.indexOf(item) : undefined;		// Index of closest circle (array of coordinates).
+  if (hoveredId === undefined) {
+    tooltip.style('opacity', 0);
+  } else {
+    const tipText = `id: ${hoveredId}<br>r = ${item.r.toFixed(2)}`;
+    const offset = getOffset(element);
+    const xTip = option == 1 ? item[0] : item.x;
+    const yTip = option == 1 ? item[1] : item.y;
+
+    tooltip
+      .style('opacity', 0.8)
+      .style('width', tipWidth)
+      .html(tipText)
+      .style('left', xTip + offset.left + 'px')
+      .style('top', yTip + offset.top + 'px');
+  }
+}
+
+// ================================================
 // Function to update number, size and color of circles
 // ================================================
 function updateCircles() {
@@ -144,6 +146,7 @@ function updateCircles() {
 				return enter
 					.append('circle')												// append a circle for each element in "data".
 					.attr('cy', d => option == 1 ? d[1] : d.y );		// Initial "y" coordinate for transition (x and r are 0 by default). 
+					// .style('fill', (d, i) => (i === hoveredId ? 'red' : null));
 			},
 			function(update) { return update; },				// define what happens to existing elements.
 			function(exit) { 														// Define how "exiting" elements disappear.
@@ -154,11 +157,8 @@ function updateCircles() {
 					.remove();															// Finally disappear.
 			}
 		)
-		.style('fill', function(d, i) { 							// Apply conditional color to the circles
-			if (i === hoveredId) return 'red';
-			}
-		)
-		.transition().duration(delay)									// Define transition from initial to static.
+		.style('fill', (d, i) => (i === hoveredId ? 'red' : null)) // Circle color (immediate, not transition)
+		.transition().duration(delay)									// Define transition from initial to static for following operations.
 		.attr('cx', d => option == 1 ? d[0] : d.x )		// x coordinate (from array or from object)
 		.attr('cy', d => option == 1 ? d[1] : d.y )		// y coordinate (from array or from object)
 		.attr('r', d => option == 1 ? d[2] : d.r );		// radius (from array or from object)
