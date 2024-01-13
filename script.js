@@ -10,6 +10,7 @@
 // Option 1: Array of coordinate arrays of type [x, y, r].
 // Option 2: Array of objects of type {"id": 1, "x": 100, "y": 50, "r": 20}
 
+"use strict";
 const 
 	option = 2,				// Choose data format: (1) = Array of coordinates / (2) = Array of objects.
 	radius = 28,			// Maximum radius available (could be any property, such as population, amount...)
@@ -77,7 +78,6 @@ function updateData() {
 function getOffset(element) {
   const bound = element.getBoundingClientRect();
   const html = document.documentElement;
-	// console.log(bound.top, window.pageYOffset, html.clientTop)
   return {
     top: bound.top + window.pageYOffset - html.clientTop,
     left: bound.left + window.pageXOffset - html.clientLeft
@@ -92,14 +92,12 @@ function handleMousemove(e) {
 		element = document.getElementById('box'),						// Define the svg box as "element"
 	 	offset = getOffset(element),												// Get the top and left offset of the svg box
 	 	pos = d3.pointer(e, this),													// Define cursor position [x, y].
-	 	item = quadtree.find(pos[0], pos[1], proximity), 		// Find the closest element within proximity limit.
-	 	tooltip = d3.select('.tooltip'), 										// D3 selection of the tooltip elemwnt.
-	
+ 		item = quadtree.find(pos[0], pos[1], proximity), 		// Find the closest element within proximity limit.
+	 	tooltip = d3.select('.tooltip'); 										// D3 selection of the tooltip elemwnt.
+		
 	hoveredId = item ? data.indexOf(item) : undefined;		// Index of closest circle (array of coordinates).
-	updateCircles();																			// update the circles to change color if required.
-	
-	if (hoveredId == undefined) tooltip.style('opacity', 0);
-	else  {
+	if (hoveredId === undefined) tooltip.style('opacity', 0);
+	else  {																								// Show tooltip when hoveriedId is defined:
 		let tipText = 'id: ' + hoveredId + '<br>r = ';			// First row of tooltip; start second row with 'r'
 		let xTip, yTip;																			// Create variables for tooltip coordinates
 		if (option == 1) {																	
@@ -119,6 +117,7 @@ function handleMousemove(e) {
 			.style('left', xTip + offset.left + 'px')					// Final 'x' position of tooltip
 			.style('top', yTip + offset.top + 'px');					// Final 'y' position of tooltip
 	}
+		updateCircles();																			// update the circles to change color if required.
 }
 
 // ================================================
@@ -156,7 +155,7 @@ function updateCircles() {
 			}
 		)
 		.style('fill', function(d, i) { 							// Apply conditional color to the circles
-				if (i === hoveredId) return 'red';
+			if (i === hoveredId) return 'red';
 			}
 		)
 		.transition().duration(delay)									// Define transition from initial to static.
@@ -173,6 +172,6 @@ function refresh() {
 	updateQuadtree();		// Update the quadtree
 	updateCircles();		// Update the circles	
 	initEvents();				// handle the mouse when hovering over the svg window
-	// console.log(data);	// (optional) log data for reference
+	// console.log(data);
 }
 refresh();
