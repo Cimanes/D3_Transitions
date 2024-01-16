@@ -4,10 +4,11 @@
 *  https://www.d3indepth.com/interaction/
 */
 
-// Note: the array "data" contains the elements that define the locations and radii of the circles. 
+// The array "data" contains the elements that define the locations and radii of the circles. 
 // It can be defined in two ways: 
 // Option 1: Array of coordinate arrays of type [x, y, r].
 // Option 2: Array of objects of type {"id": 1, "x": 100, "y": 50, "r": 20}
+// The script is valid for both of them.
 
 "use strict";
 const 
@@ -22,45 +23,44 @@ const
 	tipWidth = '100px';		// Width of the tooltip box.
 
 let data = [],					// Variable to store data from circles (position and radius).
-	dragging = false,
 	delay = tranDelay,		// Delay during transition.
 	hoveredId,						// Variable to store id of the closest circle.
+	brushExtent,					// Variable to store extent of square brush box.
 	width = window.innerWidth * hFactor, 		// Width of the SVG container.
 	height = window.innerHeight * vFactor; 	// Height of the SVG container.
 
 let box = d3.select('#box')			// Define the size of the svg container
 	.style('width', width).style('height', height);
-
+     
 // ================================================
 // Function to find top-left corner of an element.
 // Ref: https://codepen.io/martinwantke/pen/rpNLWr
 // ================================================
-function getOffset(element) {
-  const bound = element.getBoundingClientRect();
+function getOffset(element) {													// Create an object with the absolute coordinates of the corners of an element
+  const bound = element.getBoundingClientRect();			// Select the bounding box of the element
   const html = document.documentElement;
   return {
     top: bound.top + window.pageYOffset - html.clientTop,
-    left: bound.left + window.pageXOffset - html.clientLeft
+    left: bound.left + window.pageXOffset - html.clientLeft,
   };
 }
 
 // ================================================
 // Re-define size of the container if the windown is resized
 // ================================================
-window.addEventListener("resize", rewindow);
+window.addEventListener("resize", rewindow);					// Catch up if the window is resized.
 
 function rewindow(){
-	width = window.innerWidth * hFactor; 			// Width of the SVG container.
-	height = window.innerHeight * vFactor; 		// Height of the SVG container.
-	box.style('width', width).style('height', height);
-}
-
+	width = window.innerWidth * hFactor; 								// Target width of the SVG container.
+	height = window.innerHeight * vFactor; 							// Target height of the SVG container.
+	box.style('width', width).style('height', height);	// Apply the changes to the SVG container.
+};
 
 // ================================================
-// Define and update the quadtree
+// Define and update the quadtree structure
 // ================================================
-let quadtree = d3.quadtree(); 	// Define the quadtree 
-if (option == 2) quadtree.x(d => d.x).y(d => d.y);	// req'd for option (2) only.
+let quadtree = d3.quadtree(); 											// Define the quadtree 
+if (option == 2) quadtree.x(d => d.x).y(d => d.y);	// Conversion req'd for option (2) only.
 
 function updateQuadtree() {	
 	quadtree.removeAll(quadtree.data());		// Start from empty quadtree.
@@ -68,15 +68,7 @@ function updateQuadtree() {
 }
 
 // ================================================
-// Enable user interaction within "box".
-// ================================================
-function initEvents() { 
-	box.on('mousemove', handleMousemove); 	// When mouse moves within 'box', run handleMousemove;
-	box.selectAll('circle').call(drag);			// When we drag a circle, use the D3.drag procedure.
-}
-
-// ================================================
-// Function to update data (circles: number, x, y, r).
+// Function to update data (define circles: number, x, y, r).
 // Two options depending on how the data array is configured:
 // ================================================
 function updateData() {
@@ -101,57 +93,28 @@ function updateData() {
 }
 
 // ================================================
-// Handle color and tooltip for each circle.
-// ================================================
-function handleMousemove(e) {
-	const 
-		pos = d3.pointer(e, this),													// Define cursor position [x, y] using D3.pointer.
-	 	item = quadtree.find(pos[0], pos[1], proximity); 		// Find the closest element within proximity limit.
-
-	updateTooltip(item);																	// Refresh the tooltip.
-	updateCircles();																			// Refresh the circles to change color.
-}
-
-// ================================================
-// Handle drag & drop.
-// ================================================
-let drag = d3.drag().on('drag', handleDrag);
-
-function handleDrag(e) {
-	const item = quadtree.find(e.x, e.y, proximity); 		// Find the closest element within proximity limit.	
-
-	e.subject.x = e.x;					// Assign the new 'x' coordinate to the dragged element
-	e.subject.y = e.y;					// Assign the new 'y' coordinate to the dragged element
-
-	updateQuadtree();						// Update quadtree with the new position of the circle.
-	updateTooltip(item);				// Update the tooltip in the new position of the circle.
-	delay = 0;									// Cancel transition delay time during drag & drop.
-	updateCircles();						// Refresh the circles (position and color).
-	delay = tranDelay;					// Return to normal transition delay value.
-}
-
-// ================================================
-// Function to update tooltip when applicable 
+// Function to update tooltip
 // ================================================
 function updateTooltip(item) {
   const tooltip = d3.select('.tooltip').style('width', tipWidth);	// Define the tooltip element and its width.
-	
-	hoveredId = item ? data.indexOf(item) : undefined;		// Index of closest circle (array of coordinates).
-  if (hoveredId === undefined) {												// Hide tooltip if cursor is not close to any circle.
+	hoveredId = item ? data.indexOf(item) : undefined;					// Index of closest circle (array of coordinates).
+
+  if (hoveredId === undefined) {															// Hide tooltip if cursor is not close to any circle.
     tooltip.style('opacity', 0);
   } 
-	else {																								// Show tooltip for the chosen circle.
+	else {																						// Show tooltip for the chosen circle.
     const 
-			element = document.getElementById('box'),					// Define the svg box as "element".
-     	offset = getOffset(element),											// Get the top and left offset of the svg box.
+			svgElement = document.getElementById('box'),					// Define the svg box as "element".
+     	svgOffset = getOffset(svgElement),											// Get the top and left offset of the svg box.
      	xTip = option == 1 ? item[0] : item.x,						// Define 'x' coordinate of the tooltip.
      	yTip = option == 1 ? item[1] : item.y,						// Define 'y' coordinate of the tooltip.
+					
 		// Define text to be shown in tooltip.		
 			tipText = `id: ${hoveredId}; r = ${item.r.toFixed(2)}<br>pos: [ ${item.x.toFixed(0)}, ${item.y.toFixed(0)}]`;		
     tooltip																							// Define the tooltip.
       .style('opacity', 0.8)														// Show it (opacity > 0).
-      .style('left', xTip + offset.left + 'px')					// Assign 'x' coordinate.
-      .style('top', yTip + offset.top + 'px')						// Assign 'y' coordinate.
+      .style('left', xTip + svgOffset.left + 'px')			// Assign 'x' coordinate (absolute).
+      .style('top', yTip + svgOffset.top + 'px')				// Assign 'y' coordinate (absolute).
 			.html(tipText);																		// Update the text.
   }
 }
@@ -177,11 +140,92 @@ function updateCircles() {
 					.remove();															// Finally disappear.
 			}
 		)
-		.style('fill', (d, i) => (i === hoveredId ? 'red' : null)) // Circle color (immediate, not transition)
 		.transition().duration(delay)									// Define transition from initial to static for following operations.
 		.attr('cx', d => option == 1 ? d[0] : d.x )		// x coordinate (from array or from object)
 		.attr('cy', d => option == 1 ? d[1] : d.y )		// y coordinate (from array or from object)
 		.attr('r', d => option == 1 ? d[2] : d.r );		// radius (from array or from object)
+}
+
+// ================================================
+// Function to update color of circles
+// ================================================
+function updateColors() {
+	d3.selectAll('circle')
+		.classed('active', (d, i) => defineColor(d, i));
+}
+
+function defineColor(d, i) {
+	const
+		xCircle = option == 1 ? d[0] : d.x,		// x coordinate of circle center depending of option (1) / (2)
+		yCircle = option == 1 ? d[1] : d.y;		// y coordinate of circle center depending of option (1) / (2)
+		
+	let inBrushExtent = brushExtent &&
+		xCircle >= brushExtent[0][0] && xCircle <= brushExtent[1][0] &&
+		yCircle >= brushExtent[0][1] &&	yCircle <= brushExtent[1][1];
+
+	if (inBrushExtent) return true;
+	if (hoveredId === i || inBrushExtent) return true;
+	else return false;
+}
+
+// ================================================
+// Handle color and tooltip for each circle.
+// ================================================
+function handleMousemove(e) {
+	const 
+		pos = d3.pointer(e, this),													// Update cursor position [x, y] using D3.pointer.
+		item = quadtree.find(pos[0], pos[1], proximity); 		// Find the closest element within proximity limit.
+
+	updateTooltip(item);																	// Refresh the tooltip.
+	updateColors();																			// Refresh the circles to change color.
+}
+
+// ================================================
+// Handle drag & drop.
+// ================================================
+let drag = d3.drag().on('drag', handleDrag);					// Define the drag procedure.
+
+function handleDrag(e) {
+	const item = quadtree.find(e.x, e.y, proximity); 		// Find the closest element within proximity limit.	
+
+	e.subject.x = Math.max(0, Math.min(width, e.x)) ;		// Assign the new 'x' coordinate to the dragged element
+	e.subject.y = Math.max(0, Math.min(height, e.y));		// Assign the new 'y' coordinate to the dragged element
+	
+	updateQuadtree();						// Update quadtree with the new position of the circle.
+	updateTooltip(item);				// Update the tooltip in the new position of the circle.
+	
+	delay = 0;									// Cancel transition delay time during drag & drop.
+	updateCircles();						// Refresh the circles (update position and color).
+	delay = tranDelay;					// Return to normal transition delay value.
+}
+
+// ================================================
+// Handle Brush window to select several circles
+// ================================================
+let brush = d3.brush()													// Define the brush procedure.
+	.extent([[0, 0], [width, height]])
+	.on('start brush', handleBrush);
+
+function handleBrush(e) {												// Update the brush rectangle.
+	brushExtent = e ? e.selection : undefined;
+	updateColors();
+}
+
+function brushAll() {														// Action for button "Select All".
+	d3.select('svg g').call(brush.move, [[0, 0], [width, height]]);
+}
+
+function clearBrush() {													// Action for button "Clear selection".
+	d3.select('svg g').call(brush.clear);
+}
+
+// ================================================
+// Enable user interaction within "box".
+// ================================================
+function initEvents() { 
+	box.on('mousemove', handleMousemove); 	// When mouse moves within 'box', run handleMousemove.
+	box.selectAll('circle').call(drag);			// Drag & Drop a circle: use the D3.drag procedure.
+	d3.select('#brush').call(brush);				// Select circles in a rectangle: use the D3.brush procedure.
 }
 
 // ================================================
@@ -192,6 +236,10 @@ function refresh() {
 	updateQuadtree();		// Update the quadtree
 	updateCircles();		// Update the circles	
 	initEvents();				// handle the mouse when hovering over the svg window
+	updateColors();			// Update colors
 }
 
 refresh();
+
+
+

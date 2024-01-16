@@ -10,8 +10,10 @@
 
   <body>
     <button id="refresh" onClick="refresh();">Refresh</button>
-    <svg id='box'></svg>
+    <svg id='box'>	<g id="brush"></g></svg>
     <div class="tooltip" id="tooltip"></div> 
+    <button onclick="brushAll()">Select all</button>
+    <button onclick="clearBrush()">Clear selection</button>
     
     <script  src="./script.js"></script>
   </body>

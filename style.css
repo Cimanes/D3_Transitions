@@ -2,6 +2,7 @@
 :root {
   --bgColor:      #222;
   --circleColor:  #fff;
+	--activeColor:	red;
   --svgColor:   	#333;
 	--buttonColor: 	#cce;
 	--hoverColor: 	#448;
@@ -16,6 +17,10 @@ circle {
 	fill: var(--circleColor);
 }
 
+circle.active {
+	fill: var(--activeColor);
+}
+
 body { background-color: var(--bgColor);}
 
 svg {	
@@ -24,11 +29,12 @@ svg {
 	margin-left: var(--marginLeft);
 }
 
+
 /* Button styles: 
 Ref: https://www.freecodecamp.org/news/css-button-style-hover-color-and-background/#active 
  */
+#refresh { display: block; }
 button {
-	display: block;
 	background-color: var(--buttonColor);
 	width: var(--buttonWidth);
 	height: max(18px, 5vh);
